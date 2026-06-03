@@ -201,6 +201,154 @@ Greedy Decoding が動いたあと、必要なら生成方法を増やす。
 - top-k
 - top-p
 
+## Step 12: checkpoint 読み込み機能
+
+保存済み checkpoint から、生成に必要な情報を復元できるようにする。
+
+checkpoint に含めるもの:
+
+- model の重み
+- tokenizer の語彙
+- model config
+
+追加する関数:
+
+- `load_checkpoint`
+- `build_model_from_checkpoint`
+
+確認すること:
+
+- tokenizer の語彙を復元できること
+- model config を復元できること
+- `model.load_state_dict` が通ること
+- 読み込んだモデルで生成できること
+
+## Step 13: 生成 API の作成
+
+HTML UI から呼び出すための Python API を作る。
+
+使用ライブラリ:
+
+- `fastapi`
+- `uvicorn`
+
+追加ファイル:
+
+```text
+app.py
+```
+
+API:
+
+```text
+POST /generate
+```
+
+入力:
+
+```json
+{
+  "text": "本文"
+}
+```
+
+出力:
+
+```json
+{
+  "generated_title": "生成されたタイトル"
+}
+```
+
+確認すること:
+
+- サーバー起動時に checkpoint を読み込めること
+- 任意の本文を POST すると生成結果が返ること
+- checkpoint がない場合に分かりやすいエラーを返すこと
+
+## Step 14: HTML UI の作成
+
+ブラウザから生成を試せる HTML を作る。
+
+追加ファイル:
+
+```text
+web/index.html
+```
+
+画面に置くもの:
+
+- 本文入力用 textarea
+- 生成ボタン
+- 生成中の表示
+- 生成結果の表示
+- エラー表示
+
+確認すること:
+
+- 入力した本文が API に送られること
+- API の結果が画面に表示されること
+- 空入力の場合は送信しないこと
+- API エラー時に画面で分かること
+
+## Step 15: Makefile の作成
+
+学習、確認、API 起動のコマンドを短く実行できるようにする。
+
+追加ファイル:
+
+```text
+Makefile
+```
+
+想定ターゲット:
+
+```text
+install
+check
+train-debug
+train
+serve
+```
+
+Makefile には `uv` を使ったコマンドを書く。
+
+例:
+
+```text
+make train-debug
+make train
+make serve
+make check
+```
+
+Windows では `make` が標準で入っていない場合があるため、手順書には `uv run ...` の直接コマンドも残す。
+
+## Step 16: UI からの動作確認
+
+学習済み checkpoint を使い、ブラウザからタイトル生成できることを確認する。
+
+想定コマンド:
+
+```text
+uv run python tiny_transformer_summarizer.py --train --checkpoint-path checkpoints/tiny_transformer.pt
+uv run uvicorn app:app --reload
+```
+
+ブラウザで開く:
+
+```text
+http://localhost:8000
+```
+
+確認すること:
+
+- HTML 画面が表示されること
+- 任意の本文を入力できること
+- 生成ボタンで API が呼ばれること
+- 生成されたタイトルが画面に表示されること
+- GPU が使える環境では API 側でも `cuda` を選べること
+
 ## 完了条件
 
 - 1 バッチの forward が動く
@@ -210,3 +358,5 @@ Greedy Decoding が動いたあと、必要なら生成方法を増やす。
 - valid loss を確認できる
 - checkpoint を保存して再利用できる
 - 本文からタイトル文字列を生成できる
+- API 経由で任意の本文からタイトルを生成できる
+- HTML UI から生成結果を確認できる
