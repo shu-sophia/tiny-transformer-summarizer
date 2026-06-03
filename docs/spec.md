@@ -69,55 +69,6 @@ tgt_labels: [B, T]
   logits:    [B, T, vocab_size]
 ```
 
-## 学習の流れ
-
-1. 本文とタイトルを token ID に変換する
-2. decoder 入力と正解ラベルを 1 token ずらして作る
-3. モデルで `logits` を出す
-4. `CrossEntropyLoss` で次トークン予測の loss を計算する
-5. backpropagation で重みを更新する
-
-学習時はまず 1 バッチの forward と loss 計算が動くことを優先する。
-
-## 推論の流れ
-
-1. 本文を token ID に変換する
-2. `<BOS>` から生成を開始する
-3. decoder の最後の出力から次 token を選ぶ
-4. greedy decoding で 1 token ずつ追加する
-5. `<EOS>` または最大長に達したら終了する
-6. token ID を文字列に戻す
-
-## 実装ステップ一覧
-
-1. データセットの読み込みと中身確認
-2. トークナイザーの準備
-3. Dataset / DataLoader の作成
-4. 小さい Encoder-Decoder Transformer の実装
-5. 1 バッチだけ順伝播して shape 確認
-6. loss 計算
-7. 小規模学習ループ
-8. Greedy decoding による生成
-9. 余裕があれば top-k / top-p / temperature を追加
-
-## 実装方針
-
-- 初心者が読めるように、過度に抽象化しない
-- 最初は 1 ファイルで動く構成にする
-- CPU でも小規模に試せる設定にする
-- 主要なテンソルには shape コメントを書く
-- 必要に応じて途中の shape やサンプル出力を print できるようにする
-- 各実装ブロックで、Transformer のどの概念に対応するかを短く説明する
-
-## 初学者がつまずきやすいポイント
-
-- `tgt_input` と `tgt_labels` の 1 token ずらし
-- decoder の未来を見ないための mask
-- padding を attention や loss で扱う方法
-- `CrossEntropyLoss` に渡す前の shape 変換
-- 日本語をどう token 化するか
-- 小さいデータでは生成品質が低くても自然なこと
-
 ## 最初の成果物
 
 ```text
