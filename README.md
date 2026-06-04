@@ -19,7 +19,7 @@ XL-Sum Japanese のニュース本文 `text` から、記事タイトル `title`
 このプロジェクトは `uv` を使います。
 
 ```bash
-uv sync
+make install
 ```
 
 ## まず小さく学習する
@@ -27,18 +27,15 @@ uv sync
 動作確認用の小さい学習です。
 
 ```bash
-uv run python tiny_transformer_summarizer.py --train --train-examples 100 --valid-examples 20 --max-steps 20 --checkpoint-path checkpoints/debug.pt
+make train-debug
 ```
 
 ## UI を起動する
 
-学習で保存した checkpoint を指定して API サーバーを起動します。
+学習で保存した checkpoint を使って API サーバーを起動します。
 
-PowerShell:
-
-```powershell
-$env:CHECKPOINT_PATH="checkpoints/debug.pt"
-uv run uvicorn app:app --reload
+```bash
+make serve CHECKPOINT_PATH=checkpoints/debug.pt
 ```
 
 ブラウザで開きます。
@@ -54,17 +51,24 @@ http://127.0.0.1:8000
 GPU が使える環境では、件数を増やして学習できます。
 
 ```bash
-uv run python tiny_transformer_summarizer.py --train --train-examples 10000 --valid-examples 1000 --epochs 3 --checkpoint-path checkpoints/tiny_transformer.pt --device auto
+make train DEVICE=cuda
 ```
 
-## Makefile を使う場合
+## よく使うコマンド
 
-`make` が使える環境なら、短いコマンドでも実行できます。
+基本はこの 4 つです。
 
 ```bash
+make install
 make train-debug
+make train
 make serve
 make check
 ```
 
-Windows では `make` が入っていないことがあります。その場合は上の `uv run ...` コマンドを使ってください。
+必要になったら、Makefile の変数で学習量や保存先を変えられます。
+
+```bash
+make train TRAIN_EXAMPLES=50000 EPOCHS=5 BATCH_SIZE=16 DEVICE=cuda
+make serve CHECKPOINT_PATH=checkpoints/tiny_transformer.pt
+```
