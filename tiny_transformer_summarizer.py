@@ -741,6 +741,38 @@ def save_checkpoint(
     print(f"saved checkpoint: {checkpoint_path}")
 
 
+def config_from_dict(config_dict: dict) -> Config:
+    valid_keys = set(Config.__dataclass_fields__)
+    filtered_config = {
+        key: value for key, value in config_dict.items() if key in valid_keys
+    }
+    return Config(**filtered_config)
+
+
+def load_checkpoint(checkpoint_path: str | Path, device: torch.device) -> dict:
+    checkpoint_path = Path(checkpoint_path)
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"checkpoint not found: {checkpoint_path}")
+    return torch.load(checkpoint_path, map_location=device, weights_only=False)
+
+
+def build_model_from_checkpoint(
+    checkpoint_path: str | Path,
+    device: torch.device,
+) -> tuple[TransformerSummarizer, CharTokenizer, Config]:
+    checkpoint = load_checkpoint(checkpoint_path, device)
+    config = config_from_dict(checkpoint["config"])
+    tokenizer = CharTokenizer(checkpoint["char_to_id"])
+    model = TransformerSummarizer(
+        tokenizer.vocab_size,
+        tokenizer.pad_id,
+        config,
+    ).to(device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.eval()
+    return model, tokenizer, config
+
+
 def filter_logits(
     logits: torch.Tensor,
     temperature: float,

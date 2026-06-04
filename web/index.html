@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tiny Transformer Summarizer</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --text: #17202a;
+        --muted: #5d6978;
+        --line: #d9e0ea;
+        --accent: #136f63;
+        --accent-strong: #0f5c52;
+        --danger: #a23b3b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        width: min(960px, calc(100vw - 32px));
+        margin: 32px auto;
+      }
+
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 14px;
+        white-space: nowrap;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+        gap: 16px;
+      }
+
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 360px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--text);
+        font: inherit;
+        line-height: 1.6;
+      }
+
+      textarea:focus {
+        border-color: var(--accent);
+        outline: 3px solid rgba(19, 111, 99, 0.16);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      button {
+        min-height: 40px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 18px;
+        background: var(--accent);
+        color: #ffffff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--accent-strong);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .message {
+        min-height: 20px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .message.error {
+        color: var(--danger);
+      }
+
+      .result {
+        min-height: 88px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        font-size: 18px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 760px) {
+        main {
+          width: min(100vw - 24px, 960px);
+          margin: 20px auto;
+        }
+
+        header,
+        .workspace {
+          display: block;
+        }
+
+        .status {
+          margin-top: 6px;
+        }
+
+        section + section {
+          margin-top: 12px;
+        }
+
+        textarea {
+          min-height: 280px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Tiny Transformer Summarizer</h1>
+        <div class="status" id="status">checkpoint: checking</div>
+      </header>
+
+      <div class="workspace">
+        <section>
+          <label for="sourceText">本文</label>
+          <textarea id="sourceText" placeholder="本文を入力"></textarea>
+          <div class="actions">
+            <button id="generateButton" type="button">生成</button>
+            <div class="message" id="message"></div>
+          </div>
+        </section>
+
+        <section>
+          <label for="result">生成タイトル</label>
+          <div class="result" id="result"></div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const sourceText = document.querySelector("#sourceText");
+      const generateButton = document.querySelector("#generateButton");
+      const message = document.querySelector("#message");
+      const result = document.querySelector("#result");
+      const status = document.querySelector("#status");
+
+      function setMessage(text, isError = false) {
+        message.textContent = text;
+        message.classList.toggle("error", isError);
+      }
+
+      async function refreshHealth() {
+        try {
+          const response = await fetch("/health");
+          const data = await response.json();
+          status.textContent = data.model_loaded
+            ? `checkpoint: loaded (${data.device})`
+            : "checkpoint: not loaded";
+        } catch (_error) {
+          status.textContent = "checkpoint: unknown";
+        }
+      }
+
+      async function generateTitle() {
+        const text = sourceText.value.trim();
+        if (!text) {
+          setMessage("本文を入力してください", true);
+          return;
+        }
+
+        generateButton.disabled = true;
+        result.textContent = "";
+        setMessage("生成中");
+
+        try {
+          const response = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.detail || "生成に失敗しました");
+          }
+
+          result.textContent = data.generated_title;
+          setMessage("");
+        } catch (error) {
+          setMessage(error.message, true);
+        } finally {
+          generateButton.disabled = false;
+        }
+      }
+
+      generateButton.addEventListener("click", generateTitle);
+      refreshHealth();
+    </script>
+  </body>
+</html>
