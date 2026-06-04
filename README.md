@@ -32,10 +32,10 @@ make train-debug
 
 ## UI を起動する
 
-学習で保存した checkpoint を使って API サーバーを起動します。
+`make train-debug` で保存した checkpoint を使って API サーバーを起動します。
 
 ```bash
-make serve CHECKPOINT_PATH=checkpoints/debug.pt
+make serve-debug
 ```
 
 ブラウザで開きます。
@@ -54,6 +54,12 @@ GPU が使える環境では、件数を増やして学習できます。
 make train DEVICE=cuda
 ```
 
+大きく学習した場合は `checkpoints/tiny_transformer.pt` に保存されます。UI を起動するときは `make serve` を使います（`make serve-debug` ではなく、こちらがデフォルトでこの checkpoint を読み込みます）。
+
+```bash
+make serve
+```
+
 ## よく使うコマンド
 
 基本はこの 4 つです。
@@ -62,6 +68,7 @@ make train DEVICE=cuda
 make install
 make train-debug
 make train
+make serve-debug
 make serve
 make check
 ```

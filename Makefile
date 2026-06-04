@@ -30,7 +30,7 @@ DEBUG_D_FF ?= 512
 export CHECKPOINT_PATH
 export DEVICE
 
-.PHONY: install check train-debug train serve
+.PHONY: install check train-debug train serve serve-debug
 
 install:
 	uv sync
@@ -76,3 +76,6 @@ train:
 
 serve:
 	$(PYTHON) -m uvicorn app:app --reload
+
+serve-debug:
+	CHECKPOINT_PATH=$(DEBUG_CHECKPOINT_PATH) $(PYTHON) -m uvicorn app:app --reload
